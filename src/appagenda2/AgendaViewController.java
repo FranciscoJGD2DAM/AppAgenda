@@ -70,40 +70,27 @@ public class AgendaViewController implements Initializable {
         columnApellidos.setCellValueFactory(new PropertyValueFactory<>("apellidos"));
         columnEmail.setCellValueFactory(new PropertyValueFactory<>("email"));
         columnProvincia.setCellValueFactory(cellData->{
-        SimpleStringProperty property=new SimpleStringProperty();
-        if (cellData.getValue().getProvincia()!=null){
-         property.setValue(cellData.getValue().getProvincia().getNombre());  // Muestra el nombre de la provincia
-        }
-        return property;
+            SimpleStringProperty property = new SimpleStringProperty();
+            if (cellData.getValue().getProvincia()!=null){
+                property.setValue(cellData.getValue().getProvincia().getNombre());  // Muestra el nombre de la provincia
+            }
+            return property;
         });
         
         tableViewAgenda.getSelectionModel().selectedItemProperty().addListener( // muestra los datos selecionados de la tabla en los text field
         (observable,oldValue,newValue)->{
-        personaSeleccionada=newValue;});
+            
+            personaSeleccionada=newValue;
+            if (personaSeleccionada != null){
         
-        if (personaSeleccionada != null){
-        textFieldNombre.setText(personaSeleccionada.getNombre());
-        textFieldApellidos.setText(personaSeleccionada.getApellidos());
+                textFieldNombre.setText(personaSeleccionada.getNombre());
+                textFieldApellidos.setText(personaSeleccionada.getApellidos());
+            }else{
+                textFieldNombre.setText("");
+                textFieldApellidos.setText("");
+            }
+        });
         
-        personaSeleccionada.setNombre(textFieldNombre.getText());
-        personaSeleccionada.setApellidos(textFieldApellidos.getText());
-        
-        entityManager.getTransaction().begin();
-        entityManager.merge(personaSeleccionada);
-        entityManager.getTransaction().commit();
-        
-        int numFilaSeleccionada =
-        tableViewAgenda.getSelectionModel().getSelectedIndex();
-        tableViewAgenda.getItems().set(numFilaSeleccionada,personaSeleccionada);
-        
-        TablePosition pos = new
-        TablePosition(tableViewAgenda,numFilaSeleccionada,null);
-        tableViewAgenda.getFocusModel().focus(pos);
-        tableViewAgenda.requestFocus();
-        } else {
-        textFieldNombre.setText("");
-        textFieldApellidos.setText("");
-        }
     }
     public void cargarTodasPersonas(){ //muestra todas las personas
         javax.persistence.Query queryPersonaFindAll= entityManager.createNamedQuery("Persona.findAll");
@@ -116,39 +103,28 @@ public class AgendaViewController implements Initializable {
     this.entityManager=entityManager;
     }
     
-
-
-    
-    
-    
     @FXML
     private void onActionButtonGuardar(ActionEvent event) {
         
         if (personaSeleccionada != null){
-        textFieldNombre.setText(personaSeleccionada.getNombre());
-        textFieldApellidos.setText(personaSeleccionada.getApellidos());
-        
-        personaSeleccionada.setNombre(textFieldNombre.getText());
-        personaSeleccionada.setApellidos(textFieldApellidos.getText());
-        
-        entityManager.getTransaction().begin();
-        entityManager.merge(personaSeleccionada);
-        entityManager.getTransaction().commit();
-        
-        int numFilaSeleccionada =
-        tableViewAgenda.getSelectionModel().getSelectedIndex();
-        tableViewAgenda.getItems().set(numFilaSeleccionada,personaSeleccionada);
-        
-        TablePosition pos = new
-        TablePosition(tableViewAgenda,numFilaSeleccionada,null);
-        tableViewAgenda.getFocusModel().focus(pos);
-        tableViewAgenda.requestFocus();
-        } else {
-        textFieldNombre.setText("");
-        textFieldApellidos.setText("");
-        }
-      
+            personaSeleccionada.setNombre(textFieldNombre.getText());
+            personaSeleccionada.setApellidos(textFieldApellidos.getText());
 
+            entityManager.getTransaction().begin();
+            entityManager.merge(personaSeleccionada);
+            entityManager.getTransaction().commit();
+
+            int numFilaSeleccionada = tableViewAgenda.getSelectionModel().getSelectedIndex();
+            tableViewAgenda.getItems().set(numFilaSeleccionada,personaSeleccionada);
+
+            TablePosition pos = new TablePosition(tableViewAgenda,numFilaSeleccionada,null);
+            tableViewAgenda.getFocusModel().focus(pos);
+            tableViewAgenda.requestFocus();
+        } else {
+            textFieldNombre.setText("");
+            textFieldApellidos.setText("");
+        }
+        
     }
 
     @FXML
@@ -156,16 +132,24 @@ public class AgendaViewController implements Initializable {
         FXMLLoader fxmlLoader=new FXMLLoader(getClass().getResource("SesionView.fxml"));
         Parent rootDetalleView=fxmlLoader.load();
         
+        rootAgendaView.setVisible(false);
+        
+        StackPane rootMain = (StackPane) rootAgendaView.getScene().getRoot();
+        rootMain.getChildren().add(rootDetalleView);
+
+        
         SesionViewController sesionViewController = (SesionViewController) fxmlLoader.getController();
-        sesionViewController.setRootAgendaView(rootAgendaView);
+        sesionViewController.setRootAgendaView((AnchorPane) rootAgendaView);
         
         sesionViewController.setTableViewPrevio(tableViewAgenda);//Intercambio de datos funcionales con el detalle
        
         
         // Para el botón Editar
-        sesionViewController.setPersona(entityManager, personaSeleccionada,false);
-        
-        sesionViewController.mostrarDatos();
+        if(personaSeleccionada != null){
+            sesionViewController.setPersona(entityManager, personaSeleccionada,false);
+
+            sesionViewController.mostrarDatos();
+        }
     }
 
     @FXML
@@ -173,9 +157,9 @@ public class AgendaViewController implements Initializable {
         Alert alert = new Alert(AlertType.CONFIRMATION);
         alert.setTitle("Confirmar");
         alert.setHeaderText("¿Desea suprimir el siguiente registro?");
-        alert.setContentText(personaSeleccionada.getNombre() + " "
-         + personaSeleccionada.getApellidos());
+        alert.setContentText(personaSeleccionada.getNombre() + " " + personaSeleccionada.getApellidos());
         Optional<ButtonType> result = alert.showAndWait();
+        
         if (result.get() == ButtonType.OK){
 
          // Acciones a realizar si el usuario acepta
@@ -190,8 +174,7 @@ public class AgendaViewController implements Initializable {
         } else {
             
         // Acciones a realizar si el usuario cancela
-        int numFilaSeleccionada=
-        tableViewAgenda.getSelectionModel().getSelectedIndex();
+        int numFilaSeleccionada = tableViewAgenda.getSelectionModel().getSelectedIndex();
         tableViewAgenda.getItems().set(numFilaSeleccionada,personaSeleccionada);
         TablePosition pos = new TablePosition(tableViewAgenda,
         numFilaSeleccionada,null);
@@ -209,28 +192,28 @@ public class AgendaViewController implements Initializable {
             FXMLLoader fxmlLoader=new FXMLLoader(getClass().getResource("SesionView.fxml"));
             Parent rootDetalleView=fxmlLoader.load();
             // Ocultar la vista de la lista
-            rootAgendaView.setVisible(false);
+            
              //Añadir la vista detalle al StackPane principal para que se muestre
-            StackPane rootMain = (StackPane) rootAgendaView.getScene().getRoot();
+            
             
             SesionViewController sesionViewController = (SesionViewController) fxmlLoader.getController();
             sesionViewController.setRootAgendaView(rootAgendaView);
-            
-            rootMain.getChildren().add(rootDetalleView);
-            
-            sesionViewController.setTableViewPrevio(tableViewAgenda);//Intercambio de datos funcionales con el detalle
-            
 
+            sesionViewController.setTableViewPrevio(tableViewAgenda);//Intercambio de datos funcionales con el detalle
+ 
             // Para el botón Nuevo:
             personaSeleccionada = new Persona();
-            sesionViewController.setPersona(entityManager,
-            personaSeleccionada,true);
-            
-
+            sesionViewController.setPersona(entityManager, personaSeleccionada,true);
             sesionViewController.mostrarDatos();
             
+            rootAgendaView.setVisible(false);// Ocultar la vista de la lista
+            
+            //Añadir la vista detalle al StackPane principal para que se muestre
+            StackPane rootMain = (StackPane) rootAgendaView.getScene().getRoot();
+            rootMain.getChildren().add(rootDetalleView);
+            
             } catch (IOException ex){
-            Logger.getLogger(AgendaViewController.class.getName()).log(Level.SEVERE,null,ex);
+                Logger.getLogger(AgendaViewController.class.getName()).log(Level.SEVERE,null,ex);
             }
                
     
